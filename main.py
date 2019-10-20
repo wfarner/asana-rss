@@ -14,8 +14,7 @@ app = Flask(__name__)
 
 @app.route('/asana/rss.xml')
 def rss():
-  token = request.args.get('username')
-  if token != os.environ['SECRET']:
+  if request.args.get('token') != os.environ['SECRET']:
     return Response('Access denied', status=400)
 
   config = ConfigParser.ConfigParser()

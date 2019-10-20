@@ -24,7 +24,6 @@ def rss():
     items.append(PyRSS2Gen.RSSItem(
       title=task['name'],
       link = "http://www.dalkescientific.com/news/030906-PyRSS2Gen.html",
-      description=task['name'],
       guid=task['gid'],
       pubDate=datetime.datetime.now()))
 

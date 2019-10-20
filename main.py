@@ -16,16 +16,13 @@ app = Flask(__name__)
 def hello():
   config = ConfigParser.ConfigParser()
   cfg_file = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/.asana.ini')
-  print('Reading %s' % cfg_file)
   config.read(cfg_file)
-  client = asana.Client.access_token(config.get('auth', 'Token'))
+  client = asana.Client.access_token(os.environ['ASANA_TOKEN'])
   client.headers={'asana-enable': 'string_ids'}
 
-  workspace = [w['gid'] for w in client.workspaces.find_all() if w['name'] == 'Home'][0]
-  project = [p['gid'] for p in client.projects.find_by_workspace(workspace) if p['name'] == 'DIY'][0]
-
+  project_gid = os.environ['ASANA_PROJECT_GID']
   items = []
-  for task in client.tasks.find_all({'project': project, 'completed_since': 'now'}):
+  for task in client.tasks.find_all({'project': project_gid, 'completed_since': 'now'}):
     items.append(PyRSS2Gen.RSSItem(
       title=task['name'],
       link = "http://www.dalkescientific.com/news/030906-PyRSS2Gen.html",

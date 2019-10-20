@@ -4,11 +4,9 @@ import asana
 import PyRSS2Gen
 from flask import Flask, Response, request
 
-import ConfigParser
 import StringIO
 import datetime
 import os
-import sys
 
 app = Flask(__name__)
 
@@ -17,9 +15,6 @@ def rss():
   if request.args.get('token') != os.environ['SECRET']:
     return Response('Access denied', status=400)
 
-  config = ConfigParser.ConfigParser()
-  cfg_file = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/.asana.ini')
-  config.read(cfg_file)
   client = asana.Client.access_token(os.environ['ASANA_TOKEN'])
   client.headers={'asana-enable': 'string_ids'}
 

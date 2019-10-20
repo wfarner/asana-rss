@@ -2,7 +2,7 @@
 
 import asana
 import PyRSS2Gen
-from flask import Flask
+from flask import Flask, Response, request
 
 import ConfigParser
 import StringIO
@@ -13,7 +13,11 @@ import sys
 app = Flask(__name__)
 
 @app.route('/asana/rss.xml')
-def hello():
+def rss():
+  token = request.args.get('username')
+  if token != os.environ['SECRET']:
+    return Response('Access denied', status=400)
+
   config = ConfigParser.ConfigParser()
   cfg_file = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/.asana.ini')
   config.read(cfg_file)

@@ -2,7 +2,9 @@
 
 import asana
 import PyRSS2Gen
-from flask import Flask, Response, request
+from flask import Flask, jsonify, request
+from werkzeug.exceptions import Forbidden
+
 
 import StringIO
 import datetime
@@ -10,21 +12,49 @@ import os
 
 app = Flask(__name__)
 
+def validate_token():
+  if request.args.get('token') != os.environ['SECRET']:
+    raise Forbidden()
+
+
+def fetch_tasks():
+  client = asana.Client.access_token(os.environ['ASANA_TOKEN'])
+  client.headers={'asana-enable': 'string_ids'}
+  project_gid = os.environ['ASANA_PROJECT_GID']
+
+  limit = request.args.get('limit', 5)
+
+  tasks = []
+  for task in client.tasks.find_all({'project': project_gid, 'completed_since': 'now'}):
+    tasks.append({
+      'name': task['name'],
+      'id': task['gid'],
+    })
+    if len(tasks) >= limit:
+      break
+  return tasks
+
+
+@app.route('/asana/tasks.json')
+def get_json():
+  validate_token()
+  return jsonify(tasks=fetch_tasks())
+
+
 @app.route('/asana/rss.xml')
 def rss():
-  if request.args.get('token') != os.environ['SECRET']:
-    return Response('Access denied', status=400)
+  validate_token()
 
   client = asana.Client.access_token(os.environ['ASANA_TOKEN'])
   client.headers={'asana-enable': 'string_ids'}
 
   project_gid = os.environ['ASANA_PROJECT_GID']
   items = []
-  for task in client.tasks.find_all({'project': project_gid, 'completed_since': 'now'}):
+  for task in fetch_tasks():
     items.append(PyRSS2Gen.RSSItem(
       title=task['name'],
       link = "http://www.dalkescientific.com/news/030906-PyRSS2Gen.html",
-      guid=task['gid'],
+      guid=task['id'],
       pubDate=datetime.datetime.now()))
 
   rss = PyRSS2Gen.RSS2(
@@ -37,6 +67,7 @@ def rss():
   buffer = StringIO.StringIO()
   rss.write_xml(buffer)
   return buffer.getvalue()
+
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=os.environ.get('PORT', None))
